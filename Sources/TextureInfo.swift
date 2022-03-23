@@ -183,26 +183,24 @@ public class TextureInfo {
                                       with: aiTextureType)
                 } else if texFileName.count > 0  && aiScene.mNumTextures > 0 {
                     self.applyEmbeddedTexture = true
-                    if (texFileName.hasPrefix("*")) {
-                        if let embeddedTextureIndex = Int((texFilePath.substring(from: 1))) {
-                            self.embeddedTextureIndex = embeddedTextureIndex
-                        }
+                    if (texFileName.hasPrefix("*")),
+                       let embeddedTextureIndex = Int((texFilePath.substring(from: 1))) {
+                        self.embeddedTextureIndex = embeddedTextureIndex
+                        
                     }
-                    if let embeddedTextureIndex = self.embeddedTextureIndex {
-                        if embeddedTextureIndex >= Int(aiScene.mNumTextures) {
-                            debugPrint("ERROR: Embedded texture index: \(embeddedTextureIndex) is out of bounds (0..\((aiScene.mNumTextures - 1))")
-                            self.embeddedTextureIndex = Int(aiScene.mNumTextures) - 1;
-                        }
-                        debugPrint("Embedded texture index: \(embeddedTextureIndex)")
-                        if let cachedImage = imageCache.cachedFileAtPath(path: texFilePath as String) {
-                            self.image = cachedImage
-                        } else {
-                            self.generateCGImageForEmbeddedTexture(at: embeddedTextureIndex,
-                                                                   in: aiScene)
-                            if let image = self.image {
-                                imageCache.storeImage(image: image,
-                                                      toPath: texFilePath as String)
-                            }
+                    if let embeddedTextureIndex = self.embeddedTextureIndex,
+                       embeddedTextureIndex >= Int(aiScene.mNumTextures) {
+                        debugPrint("ERROR: Embedded texture index: \(embeddedTextureIndex) is out of bounds (0..\((aiScene.mNumTextures - 1))")
+                        self.embeddedTextureIndex = Int(aiScene.mNumTextures) - 1
+                    }
+                    debugPrint("Embedded texture index: \(embeddedTextureIndex)")
+                    
+                    if let cachedImage = imageCache.cachedFileAtPath(path: texFilePath as String) {
+                        self.image = cachedImage
+                    } else {
+                        self.generateCGImageForEmbeddedTexture(at: embeddedTextureIndex ?? 0, in: aiScene)
+                        if let image = self.image {
+                            imageCache.storeImage(image: image, toPath: texFilePath as String)
                         }
                     }
                 } else {
