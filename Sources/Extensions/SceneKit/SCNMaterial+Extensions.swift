@@ -122,7 +122,8 @@ extension SCNMaterial {
     func loadContentsProperties(from aiMaterial: UnsafeMutablePointer<aiMaterial>,
                                 aiScene: aiScene,
                                 path: String,
-                                imageCache: AssimpImageCache) {
+                                imageCache: AssimpImageCache,
+                                textureIndex: Int) {
         let textureTypeTuple = [(value: aiTextureType_DIFFUSE,
                                  description: "Diffuse"),
                                 (value: aiTextureType_SPECULAR,
@@ -147,6 +148,7 @@ extension SCNMaterial {
             debugPrint("Loading texture type : \($0.description)")
             let textureInfo = TextureInfo(aiMaterial: aiMaterial,
                                           textureType: $0.value,
+                                          currentEmbedTextureIndex: textureIndex,
                                           in: aiScene,
                                           at: path,
                                           imageCache: imageCache)

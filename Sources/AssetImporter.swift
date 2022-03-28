@@ -224,14 +224,15 @@ public class AssetImporter {
                        imageCache: AssimpImageCache) -> [SCNMaterial] {
         var scnMaterials: [SCNMaterial] = []
         let nodeAIMaterials = aiNode.getMaterials(from: aiScene)
-        for var aiMaterial in nodeAIMaterials {
+        for var (index, aiMaterial) in nodeAIMaterials.enumerated() {
             debugPrint("Material name is \(aiMaterial.name)")
             let scnMaterial = SCNMaterial()
             scnMaterial.name = aiMaterial.name
             scnMaterial.loadContentsProperties(from: &aiMaterial,
                                                aiScene: aiScene,
                                                path: path,
-                                               imageCache: imageCache)
+                                               imageCache: imageCache,
+                                               textureIndex: index)
             scnMaterial.loadMultiplyProperty(from: &aiMaterial)
             if #available(macOS 10.12, iOS 9.0, *) {
                 scnMaterial.loadBlendModeProperty(from: &aiMaterial)

@@ -93,7 +93,7 @@ public class TextureInfo {
     /// A bitmap image representing either an external or embedded texture applied to
     /// a material property.
     var image: CGImage?
-    
+    var currentEmbedTextureIndex: Int
     
     // MARK: - Creating a texture info
     
@@ -107,10 +107,12 @@ public class TextureInfo {
     ///   - imageCache: A new texture info.
     init(aiMaterial: UnsafeMutablePointer<aiMaterial>,
          textureType aiTextureType: aiTextureType,
+         currentEmbedTextureIndex: Int,
          in aiScene: aiScene,
          at path: String,
          imageCache: AssimpImageCache) {
         
+        self.currentEmbedTextureIndex = currentEmbedTextureIndex
         self.imageSource = nil
         self.imageDataProvider = nil
         self.image = nil
@@ -198,7 +200,7 @@ public class TextureInfo {
                     if let cachedImage = imageCache.cachedFileAtPath(path: texFilePath as String) {
                         self.image = cachedImage
                     } else {
-                        self.generateCGImageForEmbeddedTexture(at: embeddedTextureIndex ?? 0, in: aiScene)
+                        self.generateCGImageForEmbeddedTexture(at: embeddedTextureIndex ?? currentEmbedTextureIndex, in: aiScene)
                         if let image = self.image {
                             imageCache.storeImage(image: image, toPath: texFilePath as String)
                         }
@@ -210,8 +212,7 @@ public class TextureInfo {
                     self.externalTexturePath = sceneDir.appending(texFileName)
                     if let externalTexturePath = self.externalTexturePath {
                         debugPrint("tex path is \(externalTexturePath)")
-                        self.generateCGImageForExternalTexture(atPath: externalTexturePath,
-                                                               imageCache: imageCache)
+                        self.generateCGImageForExternalTexture(atPath: externalTexturePath, imageCache: imageCache)
                     }
                 }
             }
@@ -269,19 +270,15 @@ public class TextureInfo {
         } else {
             debugPrint("Generating external texture")
             let imageURL = NSURL.fileURL(withPath: path as String)
-            if let imageSource = CGImageSourceCreateWithURL(imageURL as CFURL,
-                                                            nil) {
+            if let imageSource = CGImageSourceCreateWithURL(imageURL as CFURL, nil) {
                 self.imageSource = imageSource
-                self.image = CGImageSourceCreateImageAtIndex(imageSource,
-                                                             0,
-                                                             nil)
+                self.image = CGImageSourceCreateImageAtIndex(imageSource, 0, nil)
             } else {
                 debugPrint("ERROR: Unable to find \(imageURL.lastPathComponent) at \(imageURL.deletingLastPathComponent())")
             }
         }
         if let image = self.image {
-            imageCache.storeImage(image: image,
-                                  toPath: (path as String))
+            imageCache.storeImage(image: image, toPath: (path as String))
         }
     }
     
@@ -289,7 +286,7 @@ public class TextureInfo {
     // MARK: - Extract color
     
     func extractColor(for aiMaterial: UnsafeMutablePointer<aiMaterial>,
-                                      with aiTextureType: aiTextureType) {
+                      with aiTextureType: aiTextureType) {
         debugPrint("Extracting color")
         var color = aiColor4D()
         color.r = 0.0
@@ -345,8 +342,8 @@ public class TextureInfo {
                                          CGFloat(color.b),
                                          CGFloat(color.a)]
             if let colorSpace = self.colorSpace,
-                let cgColor = CGColor(colorSpace: colorSpace,
-                                      components: components) {
+               let cgColor = CGColor(colorSpace: colorSpace,
+                                     components: components) {
                 self.color = Color(cgColor: cgColor)
             }
         }
@@ -359,7 +356,13 @@ public class TextureInfo {
     ///
     /// - Returns: Returns either a color or a bitmap image.
     func getMaterialPropertyContents() -> Any? {
-        return (self.applyEmbeddedTexture || self.applyExternalTexture) ? self.image : self.color
+        let applyTexture = self.applyEmbeddedTexture || self.applyExternalTexture
+        if applyTexture {
+            guard let cgImage = image else { return nil }
+            return cgImage
+        } else {
+            return color
+        }
     }
     
     /// Releases the graphics resources used to generate color or bitmap image to be
