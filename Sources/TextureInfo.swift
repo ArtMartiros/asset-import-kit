@@ -236,7 +236,12 @@ public class TextureInfo {
             let imageData = NSData(bytes: data,
                                    length: Int(mWidth))
             self.imageDataProvider = CGDataProvider(data: imageData)
-            let format = tupleOfInt8sToString(aiTexture.achFormatHint)
+            let format: String = CArray<CChar>.read(aiTexture.achFormatHint) { body in
+                guard let baseAddress = body.baseAddress else {
+                    return ""
+                }
+                return String(cString: baseAddress)
+            }
             if format.contains("png") {
                 debugPrint("Created png embedded texture")
                 self.image = CGImage(pngDataProviderSource: self.imageDataProvider!,
@@ -379,3 +384,22 @@ public class TextureInfo {
     
 }
 
+enum CArray<T> {
+    @discardableResult
+    @_transparent
+    static func write<C, O>(_ cArray: inout C, _ body: (UnsafeMutableBufferPointer<T>) throws -> O) rethrows -> O {
+        try withUnsafeMutablePointer(to: &cArray) {
+            try body(UnsafeMutableBufferPointer<T>(start: UnsafeMutableRawPointer($0).assumingMemoryBound(to: T.self),
+                                                   count: MemoryLayout<C>.stride / MemoryLayout<T>.stride))
+        }
+    }
+
+    @discardableResult
+    @_transparent
+    static func read<C, O>(_ cArray: C, _ body: (UnsafeBufferPointer<T>) throws -> O) rethrows -> O {
+        try withUnsafePointer(to: cArray) {
+            try body(UnsafeBufferPointer<T>(start: UnsafeRawPointer($0).assumingMemoryBound(to: T.self),
+                                            count: MemoryLayout<C>.stride / MemoryLayout<T>.stride))
+        }
+    }
+}

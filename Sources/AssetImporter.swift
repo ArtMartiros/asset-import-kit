@@ -52,7 +52,7 @@ public class AssetImporter {
                                                 UInt32(postProcessSteps.rawValue))
         else {
             // The pointer has a renference to nil if the import failed.
-            let errorString = tupleOfInt8sToString(aiGetErrorString().pointee)
+            let errorString = String(cString: aiGetErrorString())
             debugPrint(" Scene importing failed for filePath \(filePath)")
             debugPrint(" Scene importing failed with error \(String(describing: errorString))")
             throw NSError(domain: "AssimpImporter",
